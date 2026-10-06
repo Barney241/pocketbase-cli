@@ -6,3 +6,4 @@ pb_data/
 coverage.out
 .claude/
 .mcp.json
+/result

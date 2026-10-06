@@ -46,6 +46,7 @@ make vet           # go vet on the main module and pbguard
 make test          # unit tests
 make integration   # builds testdata/pbserver and runs every command against a real PocketBase
 make build         # bin/pbctl
+nix build          # the flake package; needs a new vendorHash in flake.nix whenever go.mod or go.sum changes
 ```
 
 Run `make vet` and `make test` after every change. Run `make integration` after touching `internal/guard`, `internal/gateway`, `internal/pb`, `pbguard`, the hook, or any command that sends a request.

@@ -16,6 +16,17 @@ A command line client for [PocketBase](https://pocketbase.io), built for AI agen
 go install github.com/Barney241/pocketbase-cli/cmd/pbctl@latest
 ```
 
+Or download a binary from the [releases](https://github.com/Barney241/pocketbase-cli/releases).
+
+With Nix, run it without installing, or install it into your profile:
+
+```bash
+nix run github:Barney241/pocketbase-cli -- status
+nix profile install github:Barney241/pocketbase-cli
+```
+
+As a flake input, the package is `inputs.pocketbase-cli.packages.${system}.default`, and `overlays.default` adds `pkgs.pbctl`.
+
 **2. Add your instance**
 
 ```bash
