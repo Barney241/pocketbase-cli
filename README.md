@@ -72,6 +72,23 @@ pbctl -p local records delete posts <id> --yes
 
 The default level stops pbctl, not `curl`: the agent can still read the stored credential. For production, use the gateway or the server guard. Setup for each is in [docs/read-only.md](docs/read-only.md).
 
+What works in read-only mode:
+
+| Area | Works | Refused |
+|---|---|---|
+| `records` | `list` `get` `count` `watch` | `create` `update` `delete` `import` `batch` |
+| `collections` | `list` `show` `export` `diff` `scaffolds` `dry-run-view` | `create` `update` `delete` `truncate` `import` |
+| `files` | `list` `url` `download` | upload (`records create/update --file`) |
+| `logs` | `list` `get` `stats` | `truncate` |
+| `settings` | `get` | `update` `test-s3` `test-email` `apple-client-secret` |
+| `backups` | `list` `download` | `create` `upload` `delete` `restore` |
+| `crons` | `list` | `run` |
+| `sql` | | every query, because the endpoint can write |
+| `auth` | `methods` `login` `refresh` | OTP, verification, password reset, email change, `impersonate` |
+| `api` | `GET` | `POST` `PATCH` `PUT` `DELETE` |
+
+The gateway and the server guard also refuse `backups download` and `collections dry-run-view`, because both can expose the secrets that sign auth tokens.
+
 ## More
 
 - [docs/reference.md](docs/reference.md): every command, output formats, configuration and exit codes
