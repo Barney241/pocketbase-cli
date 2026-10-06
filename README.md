@@ -59,7 +59,7 @@ Without a profile, `PBCTL_URL` with `PBCTL_TOKEN` or `PBCTL_IDENTITY` + `PBCTL_P
 
 ### Telling an agent about it
 
-Put this in `CLAUDE.md`, `AGENTS.md` or your system prompt:
+[AGENTS.md](AGENTS.md) has the full rules for agents. The short version, for `CLAUDE.md`, `AGENTS.md` or your system prompt:
 
 ```
 Use `pbctl` for anything PocketBase: data, schema, logs, files. Run `pbctl guide` once for the syntax.
