@@ -34,7 +34,7 @@ Profiles: `local` (writable), `prod` (read-only). Never work around a read-only 
 | `internal/config` | Profiles, the system policy file, and where read-only comes from. |
 | `internal/pb` | The PocketBase HTTP client: auth, token cache, errors, dry-run. |
 | `internal/output` | Table, JSON and JSON Lines rendering, and truncation. |
-| `internal/cli` | Every command, the embedded `guide.md` and the embedded `pbctl_readonly.pb.js` hook. |
+| `internal/cli` | Every command, the MCP server (`mcp.go`), the embedded `guide.md` and the embedded `pbctl_readonly.pb.js` hook. |
 | `internal/gateway` | The read-only gateway that holds the credential. |
 | `pbguard` | Server-side guard for Go PocketBase apps. Its own Go module. |
 | `testdata/pbserver` | A PocketBase server built only for the integration suite. Its own Go module. |
@@ -58,7 +58,7 @@ Run `make vet` and `make test` after every change. Run `make integration` after 
 - **Secrets never reach output.** That includes error messages, hints, `--dry-run` output and suggested next commands. Do not add a flag that takes a password or token as its value.
 - **stdout is data, stderr is notes.** Column names, JSON shapes and exit codes are a contract: add, do not rename or repurpose.
 - **No prompts, pagers, spinners or colour when stdout is not a terminal**, and no command that runs forever by default.
-- **Keep the main module free of PocketBase.** Its dependencies are cobra and `golang.org/x/term`. Anything that imports PocketBase goes in `pbguard` or `testdata/pbserver`.
+- **Keep the main module free of PocketBase.** Its dependencies are cobra, `golang.org/x/term` and the official MCP Go SDK. Anything that imports PocketBase goes in `pbguard` or `testdata/pbserver`.
 - **Keep the docs in step.** A new or changed command updates `internal/cli/guide.md`, the command's `--help` example and the table in `docs/reference.md` in the same change.
 - Use one verb set: `list`, `get` or `show`, `create`, `update`, `delete`. Match the naming and structure of the neighbouring command.
 

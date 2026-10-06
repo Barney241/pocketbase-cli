@@ -14,7 +14,7 @@
 | `sql` | | `sql "<query>"` (the endpoint can write, so it counts as a write) |
 | `auth` | `methods` `login` `refresh` | `request-otp` `with-otp` `request-verification` `confirm-verification` `request-password-reset` `confirm-password-reset` `request-email-change` `confirm-email-change` `impersonate` |
 | `api` | `api GET <path>` | `api POST|PATCH|PUT|DELETE <path>` |
-| setup | `status` `guide` `profile list` | `profile add|use|remove|lock|unlock` `gateway` `guard hook` |
+| setup | `status` `guide` `profile list` `mcp` | `profile add|use|remove|lock|unlock` `gateway` `guard hook` |
 
 Things worth knowing:
 

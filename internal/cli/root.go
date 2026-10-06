@@ -121,7 +121,7 @@ func (a *app) rootCommand() *cobra.Command {
 		a.recordsCommand(), a.collectionsCommand(), a.logsCommand(), a.filesCommand(),
 		a.settingsCommand(), a.backupsCommand(), a.cronsCommand(), a.sqlCommand(),
 		a.authCommand(), a.apiCommand(), a.profileCommand(), a.statusCommand(),
-		a.guideCommand(), a.gatewayCommand(), a.guardCommand(),
+		a.guideCommand(), a.gatewayCommand(), a.guardCommand(), a.mcpCommand(),
 	)
 	return root
 }

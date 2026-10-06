@@ -6,6 +6,7 @@ A command line client for [PocketBase](https://pocketbase.io), built for AI agen
 - Small output by default, so it does not fill an agent's context.
 - Read-only by default, with two stronger modes an agent cannot switch off.
 - Covers the whole API: records, collections, files, logs, settings, backups, crons, SQL and auth.
+- Also runs as an MCP server: `pbctl mcp`.
 
 ## Get started
 
@@ -48,6 +49,27 @@ Never work around a read-only refusal; ask me instead.
 ```
 
 `pbctl guide` prints a one-page reference of every command and the filter syntax.
+
+## Use it as an MCP server
+
+`pbctl mcp` serves a profile over stdio with the official [MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk), for clients that take MCP servers instead of shell commands.
+
+```bash
+claude mcp add pocketbase -- pbctl mcp -p prod
+```
+
+Or in any client's MCP config:
+
+```json
+{ "mcpServers": { "pocketbase": { "command": "pbctl", "args": ["mcp", "-p", "prod"] } } }
+```
+
+| Tools | Offered when |
+|---|---|
+| `status` `guide` `collections_list` `collections_show` `records_list` `records_get` `records_count` `logs_list` `logs_get` `files_list` `settings_get` `api_get` | always |
+| `records_create` `records_update` `records_delete` `api_write` | the profile is writable |
+
+The profile is fixed when the server starts and a tool cannot change it. On a read-only profile the writing tools are not offered at all, and the same read-only check as the CLI still applies underneath. `records_delete` needs `confirm: true`. Results are the same compact tables as the CLI, capped at 25,000 characters.
 
 ## Writing
 
