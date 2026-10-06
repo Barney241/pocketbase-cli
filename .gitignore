@@ -1,0 +1,8 @@
+/bin/
+/dist/
+/pbctl
+pb_data/
+*.test
+coverage.out
+.claude/
+.mcp.json
