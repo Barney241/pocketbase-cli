@@ -89,6 +89,23 @@ What works in read-only mode:
 
 The gateway and the server guard also refuse `backups download` and `collections dry-run-view`, because both can expose the secrets that sign auth tokens.
 
+What a writable profile adds:
+
+| Area | Commands | What they do |
+|---|---|---|
+| `records` | `create` `update` `delete` `import` `batch` | change records one at a time, from a JSON Lines file, or as one transaction |
+| `collections` | `create` `update` `delete` `truncate` `import` | change the schema and API rules, or empty a collection |
+| `files` | `records create/update --file field=path` | upload a file into a record |
+| `logs` | `truncate` | delete all logs |
+| `settings` | `update` `test-s3` `test-email` `apple-client-secret` | change instance settings and test the storage and mail setup |
+| `backups` | `create` `upload` `delete` `restore` | manage backups and restore one |
+| `crons` | `run` | trigger a cron job now |
+| `sql` | `sql "<query>"` | run raw SQL on the server |
+| `auth` | `request-otp` `with-otp` `request-verification` `confirm-verification` `request-password-reset` `confirm-password-reset` `request-email-change` `confirm-email-change` `impersonate` | run the auth flows for a user |
+| `api` | `POST` `PATCH` `PUT` `DELETE` | call any endpoint, including your own routes |
+
+Every write accepts `--dry-run`. Destructive ones need `--yes`.
+
 ## More
 
 - [docs/reference.md](docs/reference.md): every command, output formats, configuration and exit codes
