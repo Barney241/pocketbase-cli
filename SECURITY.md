@@ -1,6 +1,6 @@
 # Security
 
-pbctl's read-only levels, and what each one does and does not protect against, are described in the README under "Read-only".
+pbctl's read-only levels, and what each one does and does not protect against, are described in [docs/read-only.md](docs/read-only.md).
 
 A bug counts as a vulnerability when:
 

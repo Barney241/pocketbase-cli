@@ -59,7 +59,7 @@ Run `make vet` and `make test` after every change. Run `make integration` after 
 - **stdout is data, stderr is notes.** Column names, JSON shapes and exit codes are a contract: add, do not rename or repurpose.
 - **No prompts, pagers, spinners or colour when stdout is not a terminal**, and no command that runs forever by default.
 - **Keep the main module free of PocketBase.** Its dependencies are cobra and `golang.org/x/term`. Anything that imports PocketBase goes in `pbguard` or `testdata/pbserver`.
-- **Keep the docs in step.** A new or changed command updates `internal/cli/guide.md`, the command's `--help` example and the README table in the same change.
+- **Keep the docs in step.** A new or changed command updates `internal/cli/guide.md`, the command's `--help` example and the table in `docs/reference.md` in the same change.
 - Use one verb set: `list`, `get` or `show`, `create`, `update`, `delete`. Match the naming and structure of the neighbouring command.
 
 ### Releases
