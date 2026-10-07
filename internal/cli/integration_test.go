@@ -214,6 +214,9 @@ func TestRecordsCanBeWrittenReadFilteredAndCounted(t *testing.T) {
 	if !strings.Contains(listed, "id\ttitle\tviews") || !strings.Contains(listed, firstID+"\tO'Brien's plan\t7") {
 		t.Fatalf("unexpected table:\n%s", listed)
 	}
+	if capped := mustRun(t, "records", "list", "posts", "--limit", "1", "--fields", "id", "-o", "jsonl"); strings.Count(capped, "\n") != 1 {
+		t.Fatalf("--limit 1 returned more than one row:\n%s", capped)
+	}
 	if count := strings.TrimSpace(mustRun(t, "records", "count", "posts", "-f", "views > 5")); count != "1" {
 		t.Fatalf("count = %q, want 1", count)
 	}

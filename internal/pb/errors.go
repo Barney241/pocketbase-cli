@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const maxPlainErrorBytes = 300
+
 type APIError struct {
 	Method  string
 	Path    string
@@ -64,9 +66,23 @@ func apiErrorFrom(method, path string, response *http.Response) *APIError {
 		apiError.Data = payload.Data
 		return apiError
 	}
-	apiError.Message = strings.TrimSpace(string(raw))
-	if apiError.Message == "" {
-		apiError.Message = http.StatusText(response.StatusCode)
-	}
+	apiError.Message = describeForeignBody(raw, response)
 	return apiError
+}
+
+func describeForeignBody(raw []byte, response *http.Response) string {
+	text := strings.TrimSpace(string(raw))
+	switch {
+	case text == "":
+		return http.StatusText(response.StatusCode)
+	case strings.HasPrefix(text, "<"):
+		answeredBy := response.Header.Get("Server")
+		if answeredBy == "" {
+			answeredBy = "a proxy"
+		}
+		return fmt.Sprintf("%s, answered by %s in front of PocketBase and not by PocketBase itself", http.StatusText(response.StatusCode), answeredBy)
+	case len(text) > maxPlainErrorBytes:
+		return text[:maxPlainErrorBytes] + "…"
+	}
+	return text
 }

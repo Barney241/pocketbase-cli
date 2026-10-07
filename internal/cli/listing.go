@@ -50,8 +50,15 @@ func (f *listFlags) register(cmd *cobra.Command, defaultSort string) {
 	flags.IntVar(&f.page, "page", 1, "page number")
 	flags.IntVarP(&f.perPage, "per-page", "n", defaultPerPage, "rows per page")
 	flags.BoolVar(&f.all, "all", false, "fetch every page, up to --limit rows")
-	flags.IntVar(&f.limit, "limit", defaultAllLimit, "row cap for --all (0 for no cap)")
+	flags.IntVar(&f.limit, "limit", defaultAllLimit, "row cap: for --all (0 for no cap), and for a single page when lower than --per-page")
 	flags.BoolVar(&f.skipTotal, "skip-total", false, "skip the total count for a faster query")
+}
+
+func (f *listFlags) rowsPerPage() int {
+	if f.limit > 0 && f.limit < f.perPage {
+		return f.limit
+	}
+	return f.perPage
 }
 
 func (f *listFlags) query() (url.Values, error) {
@@ -65,7 +72,7 @@ func (f *listFlags) query() (url.Values, error) {
 	setIfPresent(query, "fields", f.fields)
 	setIfPresent(query, "expand", f.expand)
 	query.Set("page", strconv.Itoa(f.page))
-	query.Set("perPage", strconv.Itoa(f.perPage))
+	query.Set("perPage", strconv.Itoa(f.rowsPerPage()))
 	if f.skipTotal {
 		query.Set("skipTotal", "1")
 	}

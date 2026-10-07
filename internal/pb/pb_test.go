@@ -186,3 +186,22 @@ func TestIdentityAndExtraHeadersComeFromTheEnvironmentOnEveryRequest(t *testing.
 		}
 	}
 }
+
+func TestAnErrorPageFromAProxyIsSummarisedInOneLine(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writer.Header().Set("Server", "nginx/1.31")
+		writer.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(writer, "<html><head><title>401 Authorization Required</title></head><body>"+strings.Repeat("<script>x()</script>", 200)+"</body></html>")
+	}))
+	defer server.Close()
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	client, err := New(Options{Profile: &config.Profile{URL: server.URL}, Version: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = client.JSON(context.Background(), http.MethodGet, "/api/collections", nil, nil, nil)
+	want := "401 GET /api/collections: Unauthorized, answered by nginx/1.31 in front of PocketBase and not by PocketBase itself"
+	if err == nil || err.Error() != want {
+		t.Fatalf("error = %v\nwant    %s", err, want)
+	}
+}
