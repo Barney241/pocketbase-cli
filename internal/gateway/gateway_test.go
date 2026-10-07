@@ -98,6 +98,7 @@ func signedLikeToken(lifetime time.Duration) string {
 type upstreamRecorder struct {
 	logins        int
 	authorization []string
+	proxyTokens   []string
 	fileTokens    []string
 	queries       []url.Values
 }
@@ -106,6 +107,7 @@ func (u *upstreamRecorder) handler() http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 		writer.Header().Set("Set-Cookie", "session=1")
+		u.proxyTokens = append(u.proxyTokens, request.Header.Get("X-Proxy-Token"))
 		switch {
 		case strings.HasSuffix(request.URL.Path, "/auth-with-password"):
 			u.logins++
@@ -130,13 +132,14 @@ func startGateway(t *testing.T, accessKey string) (*httptest.Server, *upstreamRe
 	upstream, _ := url.Parse(upstreamServer.URL)
 	gatewayServer := httptest.NewUnstartedServer(nil)
 	gatewayServer.Config.Handler = New(Config{
-		Upstream:     upstream,
-		Collection:   "_superusers",
-		Identity:     "admin@example.com",
-		Password:     "secret",
-		AccessKey:    accessKey,
-		AllowedHosts: []string{gatewayServer.Listener.Addr().String()},
-		Log:          io.Discard,
+		Upstream:        upstream,
+		Collection:      "_superusers",
+		Identity:        "admin@example.com",
+		Password:        "secret",
+		AccessKey:       accessKey,
+		AllowedHosts:    []string{gatewayServer.Listener.Addr().String()},
+		UpstreamHeaders: map[string]string{"X-Proxy-Token": "proxy-token"},
+		Log:             io.Discard,
 	})
 	gatewayServer.Start()
 	t.Cleanup(gatewayServer.Close)
@@ -248,4 +251,23 @@ func TestTheGatewayRefusesWritesSecretFiltersBrowsersAndStrangers(t *testing.T) 
 func keyed(request *http.Request, _ error) *http.Request {
 	request.Header.Set("X-Pbctl-Gateway-Key", "open-sesame")
 	return request
+}
+
+func TestTheGatewaySendsItsUpstreamHeadersOnLoginsAndReadsWhateverTheClientSends(t *testing.T) {
+	gatewayServer, upstream := startGateway(t, "")
+	request, _ := http.NewRequest(http.MethodGet, gatewayServer.URL+"/api/collections/posts/records", nil)
+	request.Header.Set("X-Proxy-Token", "from-the-client")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusOK || len(upstream.proxyTokens) != 2 {
+		t.Fatalf("want a login and a read upstream, got status %d and %d upstream calls", response.StatusCode, len(upstream.proxyTokens))
+	}
+	for _, sent := range upstream.proxyTokens {
+		if sent != "proxy-token" {
+			t.Errorf("upstream received X-Proxy-Token %q, want the gateway's own", sent)
+		}
+	}
 }

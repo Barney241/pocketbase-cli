@@ -57,7 +57,7 @@ func (c *Client) loginToken(ctx context.Context) (string, error) {
 		c.baseToken = cached
 		return cached, nil
 	}
-	token, err := c.Login(ctx, profile.Collection(), profile.Identity, profile.ResolvedPassword())
+	token, err := c.Login(ctx, profile.Collection(), profile.ResolvedIdentity(), profile.ResolvedPassword())
 	if err != nil {
 		return "", err
 	}
@@ -149,7 +149,7 @@ func (c *Client) tokenCachePath(key string) string {
 		return ""
 	}
 	profile := c.options.Profile
-	digest := sha256.Sum256([]byte(strings.Join([]string{c.base.String(), profile.Collection(), profile.Identity, key}, "\x00")))
+	digest := sha256.Sum256([]byte(strings.Join([]string{c.base.String(), profile.Collection(), profile.ResolvedIdentity(), key}, "\x00")))
 	return filepath.Join(cacheDir, "pbctl", "tokens", hex.EncodeToString(digest[:12]))
 }
 

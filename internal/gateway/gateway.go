@@ -30,14 +30,15 @@ const (
 )
 
 type Config struct {
-	Upstream     *url.URL
-	Collection   string
-	Identity     string
-	Password     string
-	StaticToken  string
-	AccessKey    string
-	AllowedHosts []string
-	Log          io.Writer
+	Upstream        *url.URL
+	Collection      string
+	Identity        string
+	Password        string
+	StaticToken     string
+	AccessKey       string
+	AllowedHosts    []string
+	UpstreamHeaders map[string]string
+	Log             io.Writer
 }
 
 type Gateway struct {
@@ -247,6 +248,9 @@ func (g *Gateway) rewrite(proxied *httputil.ProxyRequest) {
 		}
 	}
 	proxied.Out.Header.Del("Accept-Encoding")
+	for name, value := range g.config.UpstreamHeaders {
+		proxied.Out.Header.Set(name, value)
+	}
 	query := proxied.Out.URL.Query()
 	query.Del("token")
 	if token, _ := proxied.In.Context().Value(fileTokenKey).(string); token != "" {
@@ -365,6 +369,9 @@ func (g *Gateway) requestToken(ctx context.Context, endpoint, authorization stri
 		return "", err
 	}
 	request.Header.Set("Content-Type", "application/json")
+	for name, value := range g.config.UpstreamHeaders {
+		request.Header.Set(name, value)
+	}
 	if authorization != "" {
 		request.Header.Set("Authorization", authorization)
 	}

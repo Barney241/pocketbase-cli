@@ -60,9 +60,10 @@ Profiles live in `~/.config/pbctl/config.json` (mode 0600, override with `PBCTL_
 |---|---|
 | `url` | instance or gateway URL; a path prefix is fine |
 | `auth_collection` | defaults to `_superusers`; any auth collection works |
-| `identity`, `password` / `password_env` | login; the `_env` form names a variable read at run time |
+| `identity` / `identity_env`, `password` / `password_env` | login; the `_env` form names a variable read at run time |
 | `token` / `token_env` | use a token instead of logging in |
 | `gateway_key` | sent to a pbctl gateway that requires one |
+| `header_env` | extra request headers, `{"X-Header": "VAR"}`, each read from the named variable at run time; for a proxy in front of the instance that wants its own token. `Authorization` and the `X-Pbctl-*` headers cannot be set |
 | `read_only` | level 1 read-only |
 | `confirm_writes` | require `--yes` for every write |
 

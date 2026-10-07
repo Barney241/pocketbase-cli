@@ -206,6 +206,9 @@ func (c *Client) newHTTPRequest(ctx context.Context, request Request) (*http.Req
 	if key := c.options.Profile.GatewayKey; key != "" {
 		httpRequest.Header.Set(GatewayKeyHeader, key)
 	}
+	for name, value := range c.options.Profile.ResolvedHeaders() {
+		httpRequest.Header.Set(name, value)
+	}
 	return httpRequest, nil
 }
 

@@ -27,17 +27,19 @@ const (
 var PolicyPath = "/etc/pbctl/policy.json"
 
 type Profile struct {
-	URL            string `json:"url"`
-	AuthCollection string `json:"auth_collection,omitempty"`
-	Identity       string `json:"identity,omitempty"`
-	Password       string `json:"password,omitempty"`
-	PasswordEnv    string `json:"password_env,omitempty"`
-	Token          string `json:"token,omitempty"`
-	TokenEnv       string `json:"token_env,omitempty"`
-	Gateway        bool   `json:"gateway,omitempty"`
-	GatewayKey     string `json:"gateway_key,omitempty"`
-	ReadOnly       bool   `json:"read_only"`
-	ConfirmWrites  bool   `json:"confirm_writes,omitempty"`
+	URL            string            `json:"url"`
+	AuthCollection string            `json:"auth_collection,omitempty"`
+	Identity       string            `json:"identity,omitempty"`
+	IdentityEnv    string            `json:"identity_env,omitempty"`
+	Password       string            `json:"password,omitempty"`
+	PasswordEnv    string            `json:"password_env,omitempty"`
+	Token          string            `json:"token,omitempty"`
+	TokenEnv       string            `json:"token_env,omitempty"`
+	Gateway        bool              `json:"gateway,omitempty"`
+	GatewayKey     string            `json:"gateway_key,omitempty"`
+	HeaderEnv      map[string]string `json:"header_env,omitempty"`
+	ReadOnly       bool              `json:"read_only"`
+	ConfirmWrites  bool              `json:"confirm_writes,omitempty"`
 }
 
 type File struct {
@@ -149,6 +151,37 @@ func (p *Profile) ResolvedToken() string {
 	return p.Token
 }
 
+func (p *Profile) ResolvedIdentity() string {
+	if p.IdentityEnv != "" {
+		if identity := os.Getenv(p.IdentityEnv); identity != "" {
+			return identity
+		}
+	}
+	return p.Identity
+}
+
+func (p *Profile) ResolvedHeaders() map[string]string {
+	headers := map[string]string{}
+	for name, variable := range p.HeaderEnv {
+		if value := os.Getenv(variable); value != "" && !IsReservedHeader(name) {
+			headers[name] = value
+		}
+	}
+	return headers
+}
+
+func IsReservedHeader(name string) bool {
+	lowered := strings.ToLower(strings.TrimSpace(name))
+	if strings.HasPrefix(lowered, "x-pbctl-") {
+		return true
+	}
+	switch lowered {
+	case "", "authorization", "host", "content-type", "content-length", "user-agent":
+		return true
+	}
+	return false
+}
+
 func (p *Profile) ResolvedPassword() string {
 	if p.PasswordEnv != "" {
 		if password := os.Getenv(p.PasswordEnv); password != "" {
@@ -159,7 +192,7 @@ func (p *Profile) ResolvedPassword() string {
 }
 
 func (p *Profile) HasCredentials() bool {
-	return p.ResolvedToken() != "" || (p.Identity != "" && p.ResolvedPassword() != "")
+	return p.ResolvedToken() != "" || (p.ResolvedIdentity() != "" && p.ResolvedPassword() != "")
 }
 
 func (p *Profile) BaseURL() (*url.URL, error) {

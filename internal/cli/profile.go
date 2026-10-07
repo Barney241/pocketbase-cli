@@ -16,6 +16,8 @@ type profileFlags struct {
 	url           string
 	collection    string
 	identity      string
+	identityEnv   string
+	headerEnv     []string
 	passwordEnv   string
 	passwordStdin bool
 	tokenEnv      string
@@ -50,6 +52,8 @@ func (a *app) profileAddCommand() *cobra.Command {
 	options.StringVar(&flags.url, "url", "", "base URL of the instance or of a pbctl gateway")
 	options.StringVar(&flags.collection, "collection", config.SuperusersCollection, "auth collection to log in to")
 	options.StringVar(&flags.identity, "identity", "", "email or username to log in with")
+	options.StringVar(&flags.identityEnv, "identity-env", "", "name of the environment variable that holds the email or username")
+	options.StringArrayVar(&flags.headerEnv, "header-env", nil, "extra request header read from an environment variable, <Header>=<VAR>; repeatable")
 	options.StringVar(&flags.passwordEnv, "password-env", "", "name of the environment variable that holds the password")
 	options.BoolVar(&flags.passwordStdin, "password-stdin", false, "read the password from stdin and store it in the config file")
 	options.StringVar(&flags.tokenEnv, "token-env", "", "name of the environment variable that holds an auth token")
@@ -70,10 +74,16 @@ func (a *app) addProfile(name string, flags *profileFlags) error {
 	if _, exists := file.Profiles[name]; exists {
 		return usagef("profile %q already exists; remove it first with `pbctl profile remove %s`", name, name)
 	}
+	headerEnv, err := headerVariables(flags.headerEnv)
+	if err != nil {
+		return err
+	}
 	profile := &config.Profile{
 		URL:            strings.TrimRight(flags.url, "/"),
 		AuthCollection: flags.collection,
 		Identity:       flags.identity,
+		IdentityEnv:    flags.identityEnv,
+		HeaderEnv:      headerEnv,
 		PasswordEnv:    flags.passwordEnv,
 		TokenEnv:       flags.tokenEnv,
 		GatewayKey:     os.Getenv(flags.gatewayKeyEnv),
@@ -102,6 +112,25 @@ func (a *app) addProfile(name string, flags *profileFlags) error {
 	return nil
 }
 
+func headerVariables(pairs []string) (map[string]string, error) {
+	if len(pairs) == 0 {
+		return nil, nil
+	}
+	variables := map[string]string{}
+	for _, pair := range pairs {
+		header, variable, found := strings.Cut(pair, "=")
+		header, variable = strings.TrimSpace(header), strings.TrimSpace(variable)
+		if !found || header == "" || variable == "" {
+			return nil, usagef("--header-env expects <Header>=<VAR>, got %q", pair)
+		}
+		if config.IsReservedHeader(header) {
+			return nil, usagef("--header-env cannot set %s: pbctl sets that header itself", header)
+		}
+		variables[header] = variable
+	}
+	return variables, nil
+}
+
 func (a *app) collectSecrets(profile *config.Profile, flags *profileFlags) error {
 	switch {
 	case flags.tokenStdin:
@@ -112,6 +141,8 @@ func (a *app) collectSecrets(profile *config.Profile, flags *profileFlags) error
 		password, err := a.readSecretLine()
 		profile.Password = password
 		return err
+	case profile.IdentityEnv != "" && profile.PasswordEnv == "" && profile.TokenEnv == "":
+		return usagef("--identity-env needs --password-env <VAR>")
 	case profile.Identity != "" && profile.PasswordEnv == "" && profile.TokenEnv == "":
 		if !a.stdinIsTerminal() {
 			return usagef("no password source: add --password-env <VAR> or --password-stdin")
@@ -171,7 +202,7 @@ func (a *app) profileListCommand() *cobra.Command {
 					"name":     name,
 					"current":  name == file.Current,
 					"url":      profile.URL,
-					"identity": firstNonEmpty(profile.Identity, describeTokenSource(profile)),
+					"identity": describeIdentitySource(profile),
 					"mode":     describeMode(profile.ReadOnly),
 				})
 			}
@@ -181,6 +212,16 @@ func (a *app) profileListCommand() *cobra.Command {
 			return a.printer.List(rows, []string{"name", "current", "url", "identity", "mode"}, rows)
 		},
 	}
+}
+
+func describeIdentitySource(profile *config.Profile) string {
+	switch {
+	case profile.Identity != "":
+		return profile.Identity
+	case profile.IdentityEnv != "":
+		return "(identity from $" + profile.IdentityEnv + ")"
+	}
+	return describeTokenSource(profile)
 }
 
 func describeTokenSource(profile *config.Profile) string {

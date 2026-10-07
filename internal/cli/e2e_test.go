@@ -466,6 +466,26 @@ func TestProfilesAreManagedFromTheCommandLineAndStayReadOnlyWithoutAPerson(t *te
 		t.Fatalf("the removed profile is still listed:\n%s", listed)
 	}
 
+	t.Setenv("TEST_ADMIN_EMAIL", adminEmail)
+	t.Setenv("TEST_ADMIN_PASSWORD", testPassword)
+	mustRun(t, "profile", "add", "from-env", "--url", pocketBase.url, "--identity-env", "TEST_ADMIN_EMAIL", "--password-env", "TEST_ADMIN_PASSWORD", "--header-env", "X-Proxy-Token=TEST_ADMIN_PASSWORD")
+	if listed := mustRun(t, "profile", "list"); !strings.Contains(listed, "(identity from $TEST_ADMIN_EMAIL)") {
+		t.Fatalf("unexpected profile list:\n%s", listed)
+	}
+	if status := mustRun(t, "-p", "from-env", "status"); !strings.Contains(status, adminEmail) || !strings.Contains(status, "mode: read-only") {
+		t.Fatalf("the profile with its identity in the environment did not log in read-only:\n%s", status)
+	}
+	for _, refused := range [][]string{
+		{"--header-env", "Authorization=TEST_ADMIN_PASSWORD"},
+		{"--header-env", "X-Pbctl-As=TEST_ADMIN_PASSWORD"},
+		{"--header-env", "X-Proxy-Token"},
+		{"--identity-env", "TEST_ADMIN_EMAIL"},
+	} {
+		if outcome := run(t, "", append([]string{"profile", "add", "refused", "--url", pocketBase.url}, refused...)...); outcome.code != 2 {
+			t.Errorf("profile add %s exited %d, want 2", strings.Join(refused, " "), outcome.code)
+		}
+	}
+
 	t.Setenv("PBCTL_URL", pocketBase.url)
 	t.Setenv("PBCTL_IDENTITY", adminEmail)
 	t.Setenv("PBCTL_PASSWORD", testPassword)

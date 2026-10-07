@@ -137,3 +137,52 @@ func TestTokensWithoutAReadableExpiryCountAsExpired(t *testing.T) {
 		}
 	}
 }
+
+func TestIdentityAndExtraHeadersComeFromTheEnvironmentOnEveryRequest(t *testing.T) {
+	seen := []http.Header{}
+	identities := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		seen = append(seen, request.Header.Clone())
+		if strings.HasSuffix(request.URL.Path, "/auth-with-password") {
+			credentials := map[string]string{}
+			json.NewDecoder(request.Body).Decode(&credentials)
+			identities = append(identities, credentials["identity"])
+			fmt.Fprintf(writer, `{"token":%q}`, tokenExpiringIn(time.Hour))
+			return
+		}
+		fmt.Fprint(writer, `{"ok":true}`)
+	}))
+	defer server.Close()
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	t.Setenv("TEST_PB_EMAIL", "from-env@example.com")
+	t.Setenv("TEST_PB_PASSWORD", "secret")
+	t.Setenv("TEST_PROXY_TOKEN", "proxy-token")
+	t.Setenv("TEST_FORGED_TOKEN", "forged")
+	profile := &config.Profile{
+		URL:         server.URL,
+		IdentityEnv: "TEST_PB_EMAIL",
+		PasswordEnv: "TEST_PB_PASSWORD",
+		HeaderEnv:   map[string]string{"X-Proxy-Token": "TEST_PROXY_TOKEN", "X-Unset": "TEST_UNSET_VARIABLE", "Authorization": "TEST_FORGED_TOKEN", "X-Pbctl-As": "TEST_FORGED_TOKEN"},
+	}
+	client, err := New(Options{Profile: profile, Version: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.JSON(context.Background(), http.MethodGet, "/api/collections", nil, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	if len(seen) != 2 || len(identities) != 1 || identities[0] != "from-env@example.com" {
+		t.Fatalf("want one login as the identity from the environment and one read, got identities %v over %d requests", identities, len(seen))
+	}
+	for _, headers := range seen {
+		if headers.Get("X-Proxy-Token") != "proxy-token" {
+			t.Errorf("a request left without the extra header: %v", headers)
+		}
+		if _, sent := headers["X-Unset"]; sent {
+			t.Errorf("a header whose variable is unset was sent: %v", headers)
+		}
+		if headers.Get("Authorization") == "forged" || headers.Get("X-Pbctl-As") != "" {
+			t.Errorf("a reserved header was taken from the profile: %v", headers)
+		}
+	}
+}

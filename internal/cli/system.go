@@ -190,7 +190,8 @@ func (a *app) gatewayConfig(flags *gatewayFlags) (gateway.Config, error) {
 		upstream, err := a.profile.BaseURL()
 		gatewayConfig.Upstream = upstream
 		gatewayConfig.Collection = a.profile.Collection()
-		gatewayConfig.Identity = a.profile.Identity
+		gatewayConfig.Identity = a.profile.ResolvedIdentity()
+		gatewayConfig.UpstreamHeaders = a.profile.ResolvedHeaders()
 		gatewayConfig.Password = a.profile.ResolvedPassword()
 		gatewayConfig.StaticToken = a.profile.ResolvedToken()
 		return gatewayConfig, err
